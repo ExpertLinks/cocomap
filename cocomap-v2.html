@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cocoマップ v2</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F4F2ED;--white:#FFFFFF;--ink:#1C1A17;--ink2:#4A4640;--ink3:#928D85;--rule:#E4E0D8;
+  --math:#C8391F;--math-bg:#FDF0EE;--math-mid:#F0997B;
+  --sci:#1A7A4A;--sci-bg:#EDF6F1;--sci-mid:#5DCAA5;
+  --soc:#1A4FA0;--soc-bg:#EEF2FB;--soc-mid:#85B7EB;
+  --jp:#8A5A10;--jp-bg:#FBF5EB;--jp-mid:#EF9F27;
+  --red:#C8391F;--red-bg:#FDF0EE;
+  --yellow:#B07010;--yellow-bg:#FBF3E0;
+  --green:#1A7A4A;--green-bg:#EDF6F1;
+}
+body{font-family:'DM Sans','Noto Sans JP',sans-serif;background:var(--bg);color:var(--ink);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+/* ── Topnav ── */
+.topnav{background:var(--white);border-bottom:1px solid var(--rule);display:flex;align-items:center;padding:0 20px;height:52px;gap:14px;flex-shrink:0;z-index:50}
+.logo{font-family:'DM Sans',sans-serif;font-weight:700;font-size:16px;letter-spacing:-.3px;display:flex;align-items:center;gap:7px;color:var(--ink)}
+.logo-pip{width:8px;height:8px;border-radius:50%;background:var(--math)}
+.nav-sep{width:1px;height:18px;background:var(--rule)}
+.nav-sub{font-size:11px;color:var(--ink3);font-family:'Noto Sans JP',sans-serif}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.btn-primary{background:var(--math);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;font-family:'Noto Sans JP',sans-serif;cursor:pointer;transition:opacity .15s}
+.btn-primary:hover{opacity:.88}
+.btn-ghost{font-size:11px;padding:5px 10px;border-radius:5px;border:1px solid var(--rule);background:transparent;color:var(--ink3);cursor:pointer;font-family:'Noto Sans JP',sans-serif}
+.btn-ghost.set{border-color:var(--sci);color:var(--sci)}
+
+/* ── Shell ── */
+.shell{display:flex;flex:1;overflow:hidden}
+
+/* ── Sidebar ── */
+.sidebar{width:200px;background:var(--white);border-right:1px solid var(--rule);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.sb-sec{padding:14px 12px 8px}
+.sb-lbl{font-size:9px;font-weight:700;letter-spacing:.8px;color:var(--ink3);text-transform:uppercase;padding:0 6px;margin-bottom:4px}
+.sb-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--ink2);font-family:'Noto Sans JP',sans-serif;transition:background .12s;user-select:none}
+.sb-item:hover{background:var(--bg)}
+.sb-item.active{font-weight:700}
+.sb-item.active.s-all{background:var(--bg);color:var(--ink)}
+.sb-item.active.s-math{background:var(--math-bg);color:var(--math)}
+.sb-item.active.s-sci{background:var(--sci-bg);color:var(--sci)}
+.sb-item.active.s-soc{background:var(--soc-bg);color:var(--soc)}
+.sb-item.active.s-jp{background:var(--jp-bg);color:var(--jp)}
+.sb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sb-cnt{margin-left:auto;font-size:10px;font-weight:700;font-family:'DM Sans',sans-serif}
+.sb-stats{margin:8px 12px 16px;padding:10px;background:var(--bg);border-radius:8px;border:1px solid var(--rule)}
+.ss-row{display:flex;justify-content:space-between;padding:4px 0;font-size:11px;border-bottom:1px solid var(--rule)}
+.ss-row:last-child{border:none}
+.ss-k{color:var(--ink3);font-family:'Noto Sans JP',sans-serif}
+.ss-v{font-weight:700;font-family:'DM Sans',sans-serif}
+
+/* ── Main ── */
+.main{flex:1;overflow-y:auto;padding:20px 24px 60px}
+
+/* Today bar */
+.today-bar{background:var(--white);border:1px solid var(--rule);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.today-n{font-family:'DM Sans',sans-serif;font-size:32px;font-weight:700;color:var(--math);line-height:1}
+.today-chips{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.chip{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;font-family:'Noto Sans JP',sans-serif;border:1px solid}
+.chip-math{background:var(--math-bg);color:var(--math);border-color:var(--math-mid)}
+.chip-sci{background:var(--sci-bg);color:var(--sci);border-color:var(--sci-mid)}
+.chip-soc{background:var(--soc-bg);color:var(--soc);border-color:var(--soc-mid)}
+.chip-jp{background:var(--jp-bg);color:var(--jp);border-color:var(--jp-mid)}
+
+/* Legend */
+.map-legend{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.map-title-txt{font-size:14px;font-weight:700;font-family:'Noto Sans JP',sans-serif}
+.legend{display:flex;gap:12px}
+.leg{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--ink3)}
+.leg-dot{width:10px;height:10px;border-radius:2px}
+
+/* Subject block */
+.subj-block{background:var(--white);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-bottom:14px}
+.subj-head{padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--rule)}
+.subj-name{font-size:13px;font-weight:700;font-family:'Noto Sans JP',sans-serif}
+.subj-prog{margin-left:auto;display:flex;align-items:center;gap:8px}
+.prog-txt{font-size:11px;color:var(--ink3)}
+.prog-bar-bg{width:80px;height:4px;background:var(--rule);border-radius:2px;overflow:hidden}
+.prog-bar-fill{height:100%;border-radius:2px;transition:width .4s}
+
+/* Unit grid */
+.unit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:1px;background:var(--rule)}
+.unit-cell{background:var(--white);padding:9px 10px;cursor:pointer;transition:all .15s;position:relative;min-height:62px;display:flex;flex-direction:column;justify-content:space-between}
+.unit-cell:hover{z-index:2;box-shadow:0 0 0 2px var(--ink) inset}
+.unit-cell.st-untouched{background:var(--white)}
+.unit-cell.st-wrong{background:#FEF2F0}
+.unit-cell.st-reviewing{background:#FFFCF0}
+.unit-cell.st-mastered{background:#F0FAF4}
+.unit-cell::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.unit-cell.cat-化学::before{background:#E8833A}
+.unit-cell.cat-物理::before{background:#5B8DD9}
+.unit-cell.cat-生物::before{background:#48A868}
+.unit-cell.cat-地学::before{background:#9B6AB5}
+.unit-cell.cat-総合::before,.unit-cell.cat-演習::before{background:#8A857E}
+.unit-cell.cat-地理::before{background:#2B8FA8}
+.unit-cell.cat-歴史::before{background:#B85C38}
+.unit-cell.cat-公民::before{background:#7B5EA7}
+.unit-cell.cat-数と計算::before{background:#C8391F}
+.unit-cell.cat-図形::before{background:#E08C1A}
+.unit-cell.cat-文章題::before{background:#3A7ABF}
+.unit-cell.cat-規則性::before{background:#2E8B57}
+.unit-cell.cat-漢字::before{background:#8A5A10}
+.unit-cell.cat-語彙::before{background:#7B5EA7}
+.unit-cell.cat-読解::before{background:#1A4FA0}
+.u-no{font-size:9px;color:var(--ink3);font-family:'DM Sans',sans-serif;margin-bottom:2px}
+.u-name{font-size:11px;font-weight:600;font-family:'Noto Sans JP',sans-serif;color:var(--ink);line-height:1.3}
+.u-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
+.u-status{font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px}
+.us-wrong{background:var(--math-bg);color:var(--math)}
+.us-reviewing{background:var(--yellow-bg);color:var(--yellow)}
+.us-mastered{background:var(--green-bg);color:var(--green)}
+.u-kp-count{font-size:9px;color:var(--ink3)}
+.u-due{position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--yellow)}
+
+/* ── Detail Panel (right drawer) ── */
+.detail-overlay{position:fixed;inset:0;background:rgba(28,26,23,.4);z-index:200;display:none}
+.detail-overlay.open{display:block}
+.detail-panel{position:fixed;top:52px;right:0;bottom:0;width:440px;background:var(--white);border-left:1px solid var(--rule);display:flex;flex-direction:column;overflow:hidden;transform:translateX(100%);transition:transform .22s ease}
+.detail-panel.open{transform:translateX(0)}
+
+.dp-head{padding:14px 18px;border-bottom:1px solid var(--rule);flex-shrink:0}
+.dp-breadcrumb{font-size:10px;color:var(--ink3);margin-bottom:4px;font-family:'Noto Sans JP',sans-serif}
+.dp-title{font-size:16px;font-weight:700;font-family:'Noto Sans JP',sans-serif;margin-bottom:6px}
+.dp-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.dp-pill{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;border:1px solid}
+.dp-stats{display:flex;gap:8px}
+.dp-stat{background:var(--bg);border-radius:6px;padding:6px 10px;text-align:center;flex:1}
+.dp-stat-n{font-family:'DM Sans',sans-serif;font-size:18px;font-weight:700;line-height:1}
+.dp-stat-l{font-size:9px;color:var(--ink3);margin-top:2px;font-family:'Noto Sans JP',sans-serif}
+.dp-close{position:absolute;top:14px;right:14px;background:none;border:none;font-size:18px;color:var(--ink3);cursor:pointer;line-height:1;padding:4px}
+
+.dp-body{flex:1;overflow-y:auto;padding:14px 18px}
+
+/* AI box */
+.ai-box{background:#EEEDFE;border:1px solid #AFA9EC;border-radius:8px;padding:10px 12px;margin-bottom:14px;display:flex;gap:8px}
+.ai-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+.ai-text{font-size:12px;color:#3C3489;line-height:1.6;font-family:'Noto Sans JP',sans-serif}
+.ai-text strong{color:#26215C}
+
+/* KP section */
+.kp-sec-label{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px}
+.kp-item{border:1px solid var(--rule);border-radius:8px;margin-bottom:6px;overflow:hidden}
+.kp-item.kp-wrong{border-color:#F0997B}
+.kp-item.kp-reviewing{border-color:#EF9F27}
+.kp-item.kp-mastered{border-color:#97C459}
+.kp-head-row{display:flex;align-items:center;gap:8px;padding:9px 11px;cursor:pointer;transition:background .12s}
+.kp-head-row:hover{background:var(--bg)}
+.kp-accent{width:4px;height:34px;border-radius:2px;flex-shrink:0}
+.kp-info{flex:1;min-width:0}
+.kp-name{font-size:12px;font-weight:600;font-family:'Noto Sans JP',sans-serif;color:var(--ink);margin-bottom:3px}
+.kp-bar-row{display:flex;align-items:center;gap:6px}
+.kp-bar-bg{flex:1;height:4px;background:var(--rule);border-radius:2px;overflow:hidden}
+.kp-bar{height:100%;border-radius:2px}
+.kp-cnt{font-size:10px;font-weight:700;font-family:'DM Sans',sans-serif;min-width:24px;text-align:right}
+.kp-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;border:1px solid;white-space:nowrap;flex-shrink:0}
+.kb-wrong{background:var(--math-bg);border-color:var(--math-mid);color:var(--math)}
+.kb-reviewing{background:var(--yellow-bg);border-color:#EF9F27;color:var(--yellow)}
+.kb-mastered{background:var(--green-bg);border-color:var(--sci-mid);color:var(--sci)}
+.kb-none{background:var(--bg);border-color:var(--rule);color:var(--ink3)}
+.kp-chevron{font-size:12px;color:var(--ink3);flex-shrink:0}
+
+/* KP expanded detail */
+.kp-detail{background:var(--bg);border-top:1px solid var(--rule);padding:10px 12px 10px 24px}
+.mistake-card{background:var(--white);border-radius:6px;border-left:3px solid var(--math);padding:9px 10px;margin-bottom:7px}
+.mistake-card:last-of-type{margin-bottom:0}
+.mc-date{font-size:10px;color:var(--ink3);font-family:'DM Sans',sans-serif;margin-bottom:3px}
+.mc-wrong{font-size:12px;font-weight:600;font-family:'Noto Sans JP',sans-serif;color:var(--ink);margin-bottom:2px}
+.mc-note{font-size:11px;color:var(--ink2);font-family:'Noto Sans JP',sans-serif;line-height:1.5}
+.mc-next{font-size:11px;color:var(--sci);font-family:'Noto Sans JP',sans-serif;margin-top:5px;padding-top:5px;border-top:1px solid var(--rule)}
+.tl-wrap{margin-top:8px}
+.tl-label{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.4px;margin-bottom:5px}
+.tl-row{display:flex;align-items:center;gap:8px;padding:3px 0}
+.tl-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.tl-date{font-size:10px;color:var(--ink3);font-family:'DM Sans',sans-serif;min-width:56px}
+.tl-tag{font-size:10px;font-weight:600;padding:1px 7px;border-radius:3px}
+.tt-wrong{background:var(--math-bg);color:var(--math)}
+.tt-ok{background:var(--green-bg);color:var(--sci)}
+.tt-plan{background:var(--yellow-bg);color:var(--yellow)}
+.tt-ng{background:var(--math-bg);color:var(--math)}
+
+.dp-foot{padding:12px 18px;border-top:1px solid var(--rule);display:flex;gap:8px;flex-shrink:0}
+.df-btn{flex:1;padding:9px;border-radius:7px;font-size:12px;font-weight:600;font-family:'Noto Sans JP',sans-serif;cursor:pointer;border:1px solid;text-align:center;transition:all .12s}
+.df-ok{background:var(--green-bg);border-color:var(--sci-mid);color:var(--sci)}
+.df-ng{background:var(--math-bg);border-color:var(--math-mid);color:var(--math)}
+.df-up{background:var(--bg);border-color:var(--rule);color:var(--ink2)}
+.df-btn:hover{filter:brightness(.96)}
+
+/* ── Upload modal ── */
+.modal-bg{position:fixed;inset:0;background:rgba(28,26,23,.5);z-index:300;display:none;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--white);border-radius:14px;width:520px;max-width:95vw;overflow:hidden}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:15px;font-weight:700;font-family:'Noto Sans JP',sans-serif}
+.modal-body{padding:18px 20px}
+.drop-zone{border:2px dashed var(--rule);border-radius:10px;padding:28px;text-align:center;cursor:pointer;position:relative;transition:all .2s;margin-bottom:12px}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--math);background:var(--math-bg)}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.dz-icon{font-size:28px;margin-bottom:6px}
+.dz-text{font-size:13px;font-weight:700;font-family:'Noto Sans JP',sans-serif;margin-bottom:3px}
+.dz-sub{font-size:11px;color:var(--ink3);font-family:'Noto Sans JP',sans-serif}
+.modal-select{width:100%;padding:8px 12px;border:1px solid var(--rule);border-radius:7px;font-size:13px;font-family:'Noto Sans JP',sans-serif;background:var(--bg);margin-bottom:10px;outline:none}
+.modal-select:focus{border-color:var(--math)}
+.spin-box{text-align:center;padding:20px;display:none}
+.spin{width:32px;height:32px;border:3px solid var(--rule);border-top-color:var(--math);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sp-text{font-size:13px;font-weight:600;font-family:'Noto Sans JP',sans-serif}
+.sp-sub{font-size:11px;color:var(--ink3);font-family:'Noto Sans JP',sans-serif;margin-top:3px}
+.result-box{background:var(--bg);border-radius:8px;padding:12px;margin-bottom:12px;display:none}
+.rb-unit{font-size:11px;color:var(--ink3);font-family:'Noto Sans JP',sans-serif;margin-bottom:3px}
+.rb-wrong{font-size:13px;font-weight:700;font-family:'Noto Sans JP',sans-serif;margin-bottom:5px}
+.rb-note{font-size:12px;font-family:'Noto Sans JP',sans-serif;color:var(--ink2);line-height:1.6}
+.rb-next{font-size:12px;font-family:'Noto Sans JP',sans-serif;color:var(--sci);margin-top:6px;padding-top:6px;border-top:1px solid var(--rule)}
+.modal-foot{display:flex;gap:8px;margin-top:4px}
+.mf-save{flex:1;padding:11px;background:var(--math);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer}
+.mf-cancel{padding:11px 16px;background:transparent;color:var(--ink3);border:1px solid var(--rule);border-radius:7px;font-size:13px;cursor:pointer;font-family:'Noto Sans JP',sans-serif}
+
+/* Key modal */
+.key-bg{position:fixed;inset:0;background:rgba(28,26,23,.5);z-index:400;display:none;align-items:center;justify-content:center}
+.key-bg.open{display:flex}
+.key-modal{background:var(--white);border-radius:14px;width:400px;max-width:95vw;padding:22px}
+.km-title{font-size:16px;font-weight:700;font-family:'Noto Sans JP',sans-serif;margin-bottom:5px}
+.km-sub{font-size:12px;color:var(--ink3);font-family:'Noto Sans JP',sans-serif;margin-bottom:14px;line-height:1.6}
+.km-input{width:100%;padding:10px 12px;border:1px solid var(--rule);border-radius:7px;font-size:13px;font-family:'DM Sans',monospace;margin-bottom:10px;outline:none}
+.km-input:focus{border-color:var(--math)}
+.km-save{width:100%;padding:12px;background:var(--math);color:#fff;border:none;border-radius:7px;font-size:14px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer}
+
+/* Ranking tab */
+.rank-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--rule)}
+.rank-item:last-child{border:none}
+.rank-n{font-size:13px;font-weight:700;color:var(--ink3);width:20px;text-align:center;flex-shrink:0}
+.rank-n.top3{color:var(--math)}
+.rank-body{flex:1;min-width:0}
+.rank-name{font-size:12px;font-weight:600;font-family:'Noto Sans JP',sans-serif;color:var(--ink)}
+.rank-unit{font-size:11px;color:var(--ink3);font-family:'Noto Sans JP',sans-serif;margin-top:1px}
+.rank-bar-bg{height:4px;background:var(--rule);border-radius:2px;overflow:hidden;margin-top:4px}
+.rank-bar{height:100%;border-radius:2px}
+.rank-cnt{font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;flex-shrink:0;min-width:28px;text-align:right}
+
+/* Toast */
+.toast{position:fixed;top:-50px;left:50%;transform:translateX(-50%);background:var(--sci);color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:600;transition:top .3s;white-space:nowrap;font-family:'Noto Sans JP',sans-serif}
+.toast.show{top:16px}
+.toast.err{background:var(--math)}
+
+.empty-state{text-align:center;padding:32px 20px;color:var(--ink3)}
+.empty-icon{font-size:40px;margin-bottom:10px}
+.empty-txt{font-size:14px;font-weight:600;font-family:'Noto Sans JP',sans-serif;color:var(--ink2);margin-bottom:4px}
+.empty-sub{font-size:12px;font-family:'Noto Sans JP',sans-serif}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- Topnav -->
+<div class="topnav">
+  <div class="logo"><div class="logo-pip"></div>Cocoマップ</div>
+  <div class="nav-sep"></div>
+  <div class="nav-sub">SAPIXカリキュラム 全体管理</div>
+  <div class="nav-right">
+    <button class="btn-ghost" id="apiBtn" onclick="openKeyModal()">🔑 APIキー</button>
+    <button class="btn-primary" onclick="openUpload()">📷 間違いを登録</button>
+  </div>
+</div>
+
+<div class="shell">
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sb-sec">
+    <div class="sb-lbl">科目</div>
+    <div class="sb-item active s-all" id="sb-all" onclick="setSubj('all')"><div class="sb-dot" style="background:var(--ink3)"></div>全科目<span class="sb-cnt" id="cnt-all"></span></div>
+    <div class="sb-item s-math" id="sb-math" onclick="setSubj('math')"><div class="sb-dot" style="background:var(--math)"></div>算数<span class="sb-cnt" id="cnt-math" style="color:var(--math)"></span></div>
+    <div class="sb-item s-sci" id="sb-sci" onclick="setSubj('sci')"><div class="sb-dot" style="background:var(--sci)"></div>理科<span class="sb-cnt" id="cnt-sci" style="color:var(--sci)"></span></div>
+    <div class="sb-item s-soc" id="sb-soc" onclick="setSubj('soc')"><div class="sb-dot" style="background:var(--soc)"></div>社会<span class="sb-cnt" id="cnt-soc" style="color:var(--soc)"></span></div>
+    <div class="sb-item s-jp" id="sb-jp" onclick="setSubj('jp')"><div class="sb-dot" style="background:var(--jp)"></div>国語<span class="sb-cnt" id="cnt-jp" style="color:var(--jp)"></span></div>
+  </div>
+  <div class="sb-sec">
+    <div class="sb-lbl">絞り込み</div>
+    <div class="sb-item" onclick="setStatus('wrong')"><div class="sb-dot" style="background:#F0997B"></div>間違い中<span class="sb-cnt" id="cnt-wrong" style="color:var(--math)"></span></div>
+    <div class="sb-item" onclick="setStatus('reviewing')"><div class="sb-dot" style="background:#EF9F27"></div>復習中<span class="sb-cnt" id="cnt-reviewing" style="color:var(--yellow)"></span></div>
+    <div class="sb-item" onclick="setStatus('mastered')"><div class="sb-dot" style="background:#97C459"></div>習得済み<span class="sb-cnt" id="cnt-mastered" style="color:var(--sci)"></span></div>
+  </div>
+  <div class="sb-sec">
+    <div class="sb-lbl">分析</div>
+    <div class="sb-item" onclick="showRanking()"><div class="sb-dot" style="background:var(--soc)"></div>弱点ランキング</div>
+  </div>
+  <div style="margin-top:auto">
+    <div class="sb-stats">
+      <div class="ss-row"><span class="ss-k">登録間違い</span><span class="ss-v" id="s-total" style="color:var(--math)">0</span></div>
+      <div class="ss-row"><span class="ss-k">習得済み単元</span><span class="ss-v" id="s-mastered" style="color:var(--sci)">0</span></div>
+      <div class="ss-row"><span class="ss-k">今日の復習</span><span class="ss-v" id="s-today" style="color:var(--yellow)">0</span></div>
+      <div class="ss-row"><span class="ss-k">最終登録</span><span class="ss-v" id="s-last">—</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main" id="main">
+  <div class="today-bar" id="todayBar" style="display:none">
+    <div>
+      <div style="font-size:10px;color:var(--ink3);font-family:'Noto Sans JP',sans-serif;margin-bottom:2px">今日の復習</div>
+      <div class="today-n" id="todayN">0</div>
+    </div>
+    <div class="today-chips" id="todayChips"></div>
+  </div>
+  <div class="map-legend">
+    <div class="map-title-txt" id="mapTitle">SAPIXカリキュラム 全体マップ</div>
+    <div class="legend">
+      <div class="leg"><div class="leg-dot" style="background:#FEF2F0;border:1px solid #F0997B"></div>間違い</div>
+      <div class="leg"><div class="leg-dot" style="background:#FFFCF0;border:1px solid #EF9F27"></div>復習中</div>
+      <div class="leg"><div class="leg-dot" style="background:#F0FAF4;border:1px solid #97C459"></div>習得済み</div>
+      <div class="leg"><div class="leg-dot" style="background:#fff;border:1px solid #E4E0D8"></div>未登録</div>
+    </div>
+  </div>
+  <div id="mapContainer"></div>
+</div>
+</div>
+
+<!-- Detail panel -->
+<div class="detail-overlay" id="detailOverlay" onclick="closeDetailBg(event)"></div>
+<div class="detail-panel" id="detailPanel">
+  <div class="dp-head">
+    <div class="dp-breadcrumb" id="dp-bc"></div>
+    <div class="dp-title" id="dp-title"></div>
+    <div class="dp-pills" id="dp-pills"></div>
+    <div class="dp-stats" id="dp-stats"></div>
+    <button class="dp-close" onclick="closeDetail()">✕</button>
+  </div>
+  <div class="dp-body" id="dp-body"></div>
+  <div class="dp-foot" id="dp-foot"></div>
+</div>
+
+<!-- Upload modal -->
+<div class="modal-bg" id="uploadBg" onclick="closeUploadBg(event)">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">📷 間違いを登録する</div>
+      <button style="background:none;border:none;font-size:18px;color:var(--ink3);cursor:pointer" onclick="closeUpload()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="uploadForm">
+        <div class="drop-zone" id="dropZone">
+          <div class="dz-icon">📄</div>
+          <div class="dz-text">写真・問題用紙をドロップ</div>
+          <div class="dz-sub">またはクリックしてファイルを選択</div>
+          <input type="file" id="fileInput" accept="image/*" onchange="handleFile(event)">
+        </div>
+        <select class="modal-select" id="subjSelect">
+          <option value="auto">科目をAIに自動判定させる</option>
+          <option value="math">算数</option>
+          <option value="sci">理科</option>
+          <option value="soc">社会</option>
+          <option value="jp">国語</option>
+        </select>
+      </div>
+      <div class="spin-box" id="spinBox">
+        <div class="spin"></div>
+        <div class="sp-text" id="spText">AIが解析中...</div>
+        <div class="sp-sub">科目・単元・知識ポイントを自動抽出しています</div>
+      </div>
+      <div class="result-box" id="resultBox">
+        <div class="rb-unit" id="rb-unit"></div>
+        <div class="rb-wrong" id="rb-wrong"></div>
+        <div class="rb-note" id="rb-note"></div>
+        <div class="rb-next" id="rb-next"></div>
+      </div>
+      <div class="modal-foot" id="modalFoot">
+        <button class="mf-cancel" onclick="closeUpload()">キャンセル</button>
+        <button class="mf-save" id="mainBtn" onclick="analyzePhoto()">AIで解析する →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- API key modal -->
+<div class="key-bg" id="keyBg" onclick="closeKeyBg(event)">
+  <div class="key-modal">
+    <div class="km-title">🔑 Anthropic APIキー設定</div>
+    <div class="km-sub"><strong>console.anthropic.com</strong> でAPIキーを発行してください。<br>写真1枚の解析≈約0.5〜1円。月数百円程度。<br>キーはこのブラウザのみに保存されます。</div>
+    <input type="password" class="km-input" id="keyInput" placeholder="sk-ant-...">
+    <button class="km-save" onclick="saveKey()">保存する</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// CURRICULUM
+// ═══════════════════════════════════════
+const C = {
+  math:{name:'算数',color:'var(--math)',bg:'var(--math-bg)',units:[
+    {no:'61-01',name:'数の性質',cat:'数と計算'},{no:'61-02',name:'平面図形',cat:'図形'},
+    {no:'61-03',name:'割合(1)',cat:'文章題'},{no:'61-04',name:'割合(2)',cat:'文章題'},
+    {no:'61-05',name:'速さ(1)',cat:'文章題'},{no:'61-06',name:'速さ(2)',cat:'文章題'},
+    {no:'H61-01',name:'割合',cat:'文章題'},{no:'H61-02',name:'平面図形',cat:'図形'},
+    {no:'H61-03',name:'立体図形',cat:'図形'},{no:'H61-04',name:'グラフ',cat:'規則性'},
+    {no:'H61-05',name:'規則性',cat:'規則性'},{no:'H61-06',name:'場合の数',cat:'規則性'},
+    {no:'61-07',name:'2量の関係',cat:'文章題'},{no:'61-08',name:'小数・分数',cat:'数と計算'},
+    {no:'61-09',name:'立体図形(1)',cat:'図形'},{no:'61-10',name:'立体図形(2)',cat:'図形'},
+    {no:'61-11',name:'拡大・縮小',cat:'図形'},{no:'61-12',name:'変化のグラフ',cat:'規則性'},
+    {no:'61-13',name:'場合の数',cat:'規則性'},{no:'61-14',name:'規則性の問題',cat:'規則性'},
+    {no:'61-15',name:'点の移動',cat:'図形'},{no:'61-16',name:'和と差の問題',cat:'文章題'},
+    {no:'61-17',name:'割合',cat:'文章題'},{no:'61-18',name:'速さ',cat:'文章題'},
+    {no:'61-19',name:'平面図形総合',cat:'図形'},{no:'61-20',name:'ニュートン算',cat:'文章題'},
+    {no:'N61-01',name:'数の性質(1)',cat:'数と計算'},{no:'N61-02',name:'和と差の問題',cat:'文章題'},
+    {no:'N61-03',name:'割合(1)',cat:'文章題'},{no:'N61-04',name:'平面図形(1)',cat:'図形'},
+    {no:'N61-05',name:'速さ(1)',cat:'文章題'},{no:'N61-06',name:'規則性',cat:'規則性'},
+    {no:'N61-07',name:'場合の数(1)',cat:'規則性'},{no:'N61-08',name:'平面図形(2)',cat:'図形'},
+    {no:'N61-09',name:'立体図形',cat:'図形'},{no:'N61-10',name:'数の性質(2)',cat:'数と計算'},
+    {no:'N61-11',name:'割合(2)',cat:'文章題'},{no:'N61-12',name:'速さ(2)',cat:'文章題'},
+    {no:'N61-13',name:'図形の移動',cat:'図形'},{no:'N61-14',name:'平面図形(3)',cat:'図形'},
+    {no:'N61-15',name:'推理と論証',cat:'規則性'},{no:'N61-16',name:'文章題総合',cat:'文章題'},
+    {no:'N61-17',name:'場合の数(2)',cat:'規則性'},{no:'N61-18',name:'表とグラフ',cat:'規則性'},
+    {no:'61-21',name:'数の性質',cat:'数と計算'},{no:'61-22',name:'和差問題(1)',cat:'文章題'},
+    {no:'61-23',name:'和差問題(2)',cat:'文章題'},{no:'61-24',name:'比と割合(1)',cat:'文章題'},
+    {no:'61-25',name:'比と割合(2)',cat:'文章題'},{no:'61-26',name:'速さ(1)',cat:'文章題'},
+    {no:'61-27',name:'速さ(2)',cat:'文章題'},{no:'61-28',name:'平面図形(1)',cat:'図形'},
+    {no:'61-29',name:'平面図形(2)',cat:'図形'},{no:'61-30',name:'場合の数',cat:'規則性'},
+    {no:'61-31',name:'立体図形',cat:'図形'},{no:'61-32',name:'表とグラフ',cat:'規則性'},
+    {no:'61-33',name:'規則性',cat:'規則性'},{no:'61-34',name:'数の性質',cat:'数と計算'},
+    {no:'61-35',name:'入試総合演習(1)',cat:'演習'},{no:'61-36',name:'入試総合演習(2)',cat:'演習'},
+    {no:'61-37',name:'入試総合演習(3)',cat:'演習'},{no:'61-38',name:'入試総合演習(4)',cat:'演習'},
+  ]},
+  sci:{name:'理科',color:'var(--sci)',bg:'var(--sci-bg)',units:[
+    {no:'630-01',name:'気体と水溶液',cat:'化学'},{no:'630-02',name:'植物のはたらき①',cat:'生物'},
+    {no:'630-03',name:'植物のはたらき②',cat:'生物'},{no:'630-04',name:'光①',cat:'物理'},
+    {no:'630-05',name:'光②',cat:'物理'},{no:'630-06',name:'燃焼',cat:'化学'},
+    {no:'H63-01',name:'電気のはたらき',cat:'物理'},{no:'H63-02',name:'太陽',cat:'地学'},
+    {no:'H63-03',name:'月',cat:'地学'},{no:'630-07',name:'太陽と月',cat:'地学'},
+    {no:'630-08',name:'人体',cat:'生物'},{no:'630-09',name:'てこ',cat:'物理'},
+    {no:'630-10',name:'ばね',cat:'物理'},{no:'630-11',name:'地層',cat:'地学'},
+    {no:'630-12',name:'中和計算',cat:'化学'},{no:'630-13',name:'星の動き',cat:'地学'},
+    {no:'630-14',name:'電熱線',cat:'物理'},{no:'630-15',name:'滑車・輪軸',cat:'物理'},
+    {no:'630-16',name:'浮力',cat:'物理'},{no:'630-17',name:'熱と水蒸気',cat:'化学'},
+    {no:'630-18',name:'天気の変化',cat:'地学'},{no:'630-19',name:'溶解度',cat:'化学'},
+    {no:'630-20',name:'物体の運動',cat:'物理'},{no:'N63-01',name:'森林と食物連鎖',cat:'生物'},
+    {no:'N63-02',name:'気体の発生',cat:'化学'},{no:'N63-03',name:'星総合',cat:'地学'},
+    {no:'N63-04',name:'月総合',cat:'地学'},{no:'N63-05',name:'力学①',cat:'物理'},
+    {no:'N63-06',name:'電気回路',cat:'物理'},{no:'N63-07',name:'中和と水溶液',cat:'化学'},
+    {no:'N63-08',name:'光総合〜凸レンズ',cat:'物理'},{no:'N63-09',name:'力学②',cat:'物理'},
+    {no:'630-21',name:'惑星',cat:'地学'},{no:'630-22',name:'電磁石',cat:'物理'},
+    {no:'630-23',name:'LED・手回し発電機',cat:'物理'},{no:'630-24',name:'熱',cat:'化学'},
+    {no:'630-25',name:'気象',cat:'地学'},{no:'630-26',name:'人体総合',cat:'生物'},
+    {no:'630-27',name:'力学総合',cat:'物理'},{no:'630-28',name:'化学計算総合①',cat:'化学'},
+    {no:'630-29',name:'物体の運動',cat:'物理'},{no:'630-30',name:'地面の動き',cat:'地学'},
+    {no:'630-31',name:'天体総合',cat:'地学'},{no:'630-32',name:'化学計算総合②',cat:'化学'},
+    {no:'630-33',name:'電気総合',cat:'物理'},{no:'630-34',name:'季節と生物',cat:'生物'},
+    {no:'630-35',name:'生物実験',cat:'生物'},{no:'630-36',name:'総合演習①',cat:'総合'},
+    {no:'630-37',name:'総合演習②',cat:'総合'},{no:'630-38',name:'総合演習③',cat:'総合'},
+  ]},
+  soc:{name:'社会',color:'var(--soc)',bg:'var(--soc-bg)',units:[
+    {no:'640-04',name:'重要地名①',cat:'地理'},{no:'640-05',name:'重要地名②',cat:'地理'},
+    {no:'640-06',name:'第1次産業①',cat:'地理'},{no:'H64-01',name:'第1次産業②',cat:'地理'},
+    {no:'H64-02',name:'第2次産業①',cat:'地理'},{no:'H64-03',name:'第2次産業②',cat:'地理'},
+    {no:'640-07',name:'貿易・世界地理①',cat:'地理'},{no:'640-08',name:'貿易・世界地理②',cat:'地理'},
+    {no:'640-09',name:'古代',cat:'歴史'},{no:'640-10',name:'中世',cat:'歴史'},
+    {no:'640-11',name:'近世',cat:'歴史'},{no:'640-12',name:'近代①',cat:'歴史'},
+    {no:'640-13',name:'近代②',cat:'歴史'},{no:'640-14',name:'近代③',cat:'歴史'},
+    {no:'640-15',name:'近代④',cat:'歴史'},{no:'640-16',name:'近代⑤',cat:'歴史'},
+    {no:'640-17',name:'現代①',cat:'歴史'},{no:'640-18',name:'現代②',cat:'歴史'},
+    {no:'640-19',name:'日本国憲法①',cat:'公民'},{no:'640-20',name:'日本国憲法②',cat:'公民'},
+    {no:'N64-01',name:'三権分立①',cat:'公民'},{no:'N64-02',name:'三権分立②',cat:'公民'},
+    {no:'N64-03',name:'公民・現代日本①',cat:'公民'},{no:'N64-04',name:'公民・現代日本②',cat:'公民'},
+    {no:'N64-05',name:'国際連合',cat:'公民'},{no:'N64-06',name:'伝統文化',cat:'歴史'},
+    {no:'N64-07',name:'地理プラス知識①',cat:'地理'},{no:'N64-08',name:'地理プラス知識②',cat:'地理'},
+    {no:'N64-09',name:'歴史プラス知識①',cat:'歴史'},{no:'640-21',name:'歴史プラス知識②',cat:'歴史'},
+    {no:'640-22',name:'国土・自然・人口',cat:'地理'},{no:'640-23',name:'都道府県・都市',cat:'地理'},
+    {no:'640-24',name:'重要地名③',cat:'地理'},{no:'640-25',name:'重要地名④',cat:'地理'},
+    {no:'640-26',name:'第1次産業',cat:'地理'},{no:'640-27',name:'第2次産業',cat:'地理'},
+    {no:'640-28',name:'貿易・世界地理',cat:'地理'},{no:'640-29',name:'日本国憲法',cat:'公民'},
+    {no:'640-30',name:'三権分立',cat:'公民'},{no:'640-31',name:'公民・現代日本',cat:'公民'},
+    {no:'640-32',name:'国際連合',cat:'公民'},{no:'640-33',name:'古代総合',cat:'歴史'},
+    {no:'640-34',name:'中世総合',cat:'歴史'},{no:'640-35',name:'近世総合',cat:'歴史'},
+    {no:'640-36',name:'近代総合',cat:'歴史'},{no:'640-37',name:'現代総合',cat:'歴史'},
+    {no:'640-38',name:'公民・国際・伝統',cat:'公民'},
+  ]},
+  jp:{name:'国語',color:'var(--jp)',bg:'var(--jp-bg)',units:[
+    {no:'62A-01',name:'知の冒険①・漢字',cat:'漢字'},{no:'62A-02',name:'読解・論説文①',cat:'読解'},
+    {no:'62A-03',name:'読解・物語文①',cat:'読解'},{no:'62A-04',name:'読解・論説文②',cat:'読解'},
+    {no:'62A-05',name:'読解・物語文②',cat:'読解'},{no:'62A-06',name:'知の冒険②・慣用句',cat:'語彙'},
+    {no:'62A-07',name:'読解・論説文③',cat:'読解'},{no:'62A-08',name:'読解・物語文③',cat:'読解'},
+    {no:'62A-09',name:'読解・随筆文①',cat:'読解'},{no:'62A-10',name:'読解・論説文④',cat:'読解'},
+    {no:'62A-11',name:'知の冒険③・文法',cat:'語彙'},{no:'62A-12',name:'読解・物語文④',cat:'読解'},
+    {no:'62A-13',name:'読解・論説文⑤',cat:'読解'},{no:'62A-14',name:'読解・随筆文②',cat:'読解'},
+    {no:'62A-15',name:'読解・物語文⑤',cat:'読解'},{no:'62A-16',name:'知の冒険④・ことわざ',cat:'語彙'},
+    {no:'62A-17',name:'読解・論説文⑥',cat:'読解'},{no:'62A-18',name:'読解・物語文⑥',cat:'読解'},
+    {no:'62A-19',name:'読解・随筆文③',cat:'読解'},{no:'62A-20',name:'読解・論説文⑦',cat:'読解'},
+    {no:'漢字-前',name:'漢字の要 前期',cat:'漢字'},{no:'漢字-後',name:'漢字の要 後期',cat:'漢字'},
+    {no:'言葉ナビ-前',name:'言葉ナビ 前半',cat:'語彙'},{no:'言葉ナビ-後',name:'言葉ナビ 後半',cat:'語彙'},
+  ]}
+};
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let db = JSON.parse(localStorage.getItem('cmap2_db') || JSON.stringify({units:{},mistakes:[]}));
+let apiKey = localStorage.getItem('cmap2_key') || '';
+let filter = {subj:'all', status:null};
+let currentPhoto = null;
+let currentResult = null;
+let openUnit = null; // {subj, no}
+let expandedKPs = {}; // key -> bool
+
+if(apiKey) document.getElementById('apiBtn').classList.add('set');
+
+// ═══════════════════════════════════════
+// UNIT STATE HELPERS
+// ═══════════════════════════════════════
+function getUnit(subj, no){ return db.units[subj+'_'+no] || {status:'untouched',kps:{},reviews:[]}; }
+
+function getUnitStatus(subj, no){
+  const u = getUnit(subj, no);
+  return u.status;
+}
+
+function getUnitKPSummary(subj, no){
+  const u = getUnit(subj, no);
+  const kps = Object.values(u.kps || {});
+  const wrong = kps.filter(k=>k.status==='wrong').length;
+  const reviewing = kps.filter(k=>k.status==='reviewing').length;
+  const mastered = kps.filter(k=>k.status==='mastered').length;
+  return {wrong, reviewing, mastered, total:kps.length};
+}
+
+function isReviewDue(subj, no){
+  const u = getUnit(subj, no);
+  if(u.status==='untouched'||u.status==='mastered') return false;
+  const allMistakes = [];
+  Object.values(u.kps||{}).forEach(kp => kp.mistakes&&kp.mistakes.forEach(m=>allMistakes.push(m.date)));
+  if(!allMistakes.length) return false;
+  const lastDate = new Date(allMistakes.sort().reverse()[0]);
+  const lastReview = u.reviews && u.reviews.length ? new Date(u.reviews[u.reviews.length-1].date) : null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const check = lastReview || lastDate;
+  const days = Math.floor((today-check)/(86400000));
+  const intervals = [1,3,7];
+  const idx = u.reviews ? u.reviews.length : 0;
+  return idx < intervals.length && days >= intervals[idx];
+}
+
+// ═══════════════════════════════════════
+// RENDER MAP
+// ═══════════════════════════════════════
+function render(){
+  const container = document.getElementById('mapContainer');
+  container.innerHTML='';
+
+  const subjList = filter.subj==='all' ? ['math','sci','soc','jp'] : [filter.subj];
+  subjList.forEach(s=>{
+    const S = C[s];
+    let units = S.units;
+    if(filter.status) units = units.filter(u=>getUnitStatus(s,u.no)===filter.status);
+    if(!units.length) return;
+
+    const mastered = S.units.filter(u=>getUnitStatus(s,u.no)==='mastered').length;
+    const pct = Math.round(mastered/S.units.length*100);
+
+    const block = document.createElement('div');
+    block.className='subj-block';
+    block.innerHTML=`
+      <div class="subj-head" style="border-left:4px solid ${S.color}">
+        <span class="subj-name" style="color:${S.color}">${S.name}</span>
+        <div class="subj-prog">
+          <span class="prog-txt">${mastered}/${S.units.length} 習得 (${pct}%)</span>
+          <div class="prog-bar-bg"><div class="prog-bar-fill" style="width:${pct}%;background:${S.color}"></div></div>
+        </div>
+      </div>
+      <div class="unit-grid" id="grid-${s}"></div>`;
+    container.appendChild(block);
+
+    const grid = block.querySelector(`#grid-${s}`);
+    units.forEach(u=>{
+      const st = getUnitStatus(s, u.no);
+      const kps = getUnitKPSummary(s, u.no);
+      const due = isReviewDue(s, u.no);
+      const cell = document.createElement('div');
+      cell.className=`unit-cell st-${st} cat-${u.cat}`;
+
+      let statusHtml='';
+      if(st==='wrong') statusHtml=`<span class="u-status us-wrong">❌ ${kps.wrong}pt弱</span>`;
+      else if(st==='reviewing') statusHtml=`<span class="u-status us-reviewing">↻ 復習中</span>`;
+      else if(st==='mastered') statusHtml=`<span class="u-status us-mastered">✓ 習得</span>`;
+
+      const kpTxt = kps.total>0 ? `<span class="u-kp-count">${kps.mastered}/${kps.total}pt</span>` : '';
+
+      cell.innerHTML=`
+        ${due?'<div class="u-due" title="今日復習予定"></div>':''}
+        <div><div class="u-no">${u.no}</div><div class="u-name">${u.name}</div></div>
+        <div class="u-bottom">${statusHtml}${kpTxt}</div>`;
+      cell.onclick=()=>openDetail(s,u.no);
+      grid.appendChild(cell);
+    });
+  });
+
+  updateCounts();
+  updateTodayBar();
+  updateStats();
+}
+
+function updateCounts(){
+  let w=0,r=0,m=0;
+  ['math','sci','soc','jp'].forEach(s=>{
+    let sc=0;
+    C[s].units.forEach(u=>{
+      const st=getUnitStatus(s,u.no);
+      if(st!=='untouched') sc++;
+      if(st==='wrong') w++;
+      if(st==='reviewing') r++;
+      if(st==='mastered') m++;
+    });
+    const el=document.getElementById('cnt-'+s);
+    if(el) el.textContent=sc||'';
+  });
+  const touched = w+r+m;
+  document.getElementById('cnt-all').textContent=touched||'';
+  document.getElementById('cnt-wrong').textContent=w||'';
+  document.getElementById('cnt-reviewing').textContent=r||'';
+  document.getElementById('cnt-mastered').textContent=m||'';
+}
+
+function updateStats(){
+  const total=db.mistakes?db.mistakes.length:0;
+  const mastered=Object.values(db.units).filter(u=>u.status==='mastered').length;
+  const todayDue=['math','sci','soc','jp'].reduce((acc,s)=>acc+C[s].units.filter(u=>isReviewDue(s,u.no)).length,0);
+  const last=db.mistakes&&db.mistakes.length?new Date(db.mistakes[db.mistakes.length-1].date).toLocaleDateString('ja-JP',{month:'short',day:'numeric'}):'—';
+  document.getElementById('s-total').textContent=total;
+  document.getElementById('s-mastered').textContent=mastered;
+  document.getElementById('s-today').textContent=todayDue;
+  document.getElementById('s-last').textContent=last;
+}
+
+function updateTodayBar(){
+  const due=[];
+  ['math','sci','soc','jp'].forEach(s=>{
+    C[s].units.forEach(u=>{if(isReviewDue(s,u.no)) due.push({s,u});});
+  });
+  const bar=document.getElementById('todayBar');
+  if(!due.length){bar.style.display='none';return;}
+  bar.style.display='flex';
+  document.getElementById('todayN').textContent=due.length;
+  document.getElementById('todayChips').innerHTML=due.slice(0,5).map(d=>`<span class="chip chip-${d.s}">${C[d.s].name}：${d.u.name}</span>`).join('')+(due.length>5?`<span style="font-size:11px;color:var(--ink3)">他${due.length-5}件</span>`:'');
+}
+
+// ═══════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════
+function setSubj(s){
+  filter={subj:s,status:null};
+  ['all','math','sci','soc','jp'].forEach(x=>{
+    const el=document.getElementById('sb-'+x);
+    if(el){el.classList.toggle('active',x===s);['s-all','s-math','s-sci','s-soc','s-jp'].forEach(c=>el.classList.remove(c));if(x===s)el.classList.add('s-'+x);}
+  });
+  document.getElementById('mapTitle').textContent=s==='all'?'SAPIXカリキュラム 全体マップ':C[s].name+' カリキュラムマップ';
+  render();
+}
+
+function setStatus(s){
+  filter.status=filter.status===s?null:s;
+  render();
+}
+
+// ═══════════════════════════════════════
+// DETAIL PANEL
+// ═══════════════════════════════════════
+function openDetail(subj, no){
+  openUnit={subj,no};
+  const S=C[subj];
+  const u=S.units.find(x=>x.no===no);
+  const state=getUnit(subj,no);
+  const kps=Object.entries(state.kps||{});
+  const kpSummary=getUnitKPSummary(subj,no);
+
+  document.getElementById('dp-bc').textContent=`${S.name} › ${no}`;
+  document.getElementById('dp-title').textContent=u.name;
+
+  // Pills
+  let pillsHtml='';
+  if(kpSummary.wrong>0) pillsHtml+=`<span class="dp-pill" style="background:var(--math-bg);border-color:var(--math-mid);color:var(--math)">❌ ${kpSummary.wrong}ポイント 要復習</span>`;
+  if(kpSummary.reviewing>0) pillsHtml+=`<span class="dp-pill" style="background:var(--yellow-bg);border-color:#EF9F27;color:var(--yellow)">↻ ${kpSummary.reviewing}ポイント 復習中</span>`;
+  if(kpSummary.mastered>0) pillsHtml+=`<span class="dp-pill" style="background:var(--green-bg);border-color:var(--sci-mid);color:var(--sci)">✓ ${kpSummary.mastered}ポイント 習得済み</span>`;
+  if(kpSummary.total===0) pillsHtml+=`<span class="dp-pill" style="background:var(--bg);border-color:var(--rule);color:var(--ink3)">まだ未登録</span>`;
+  document.getElementById('dp-pills').innerHTML=pillsHtml;
+
+  // Stats
+  const totalMistakes=kps.reduce((a,[,v])=>a+(v.mistakes?v.mistakes.length:0),0);
+  const totalReviews=(state.reviews||[]).length;
+  const lastDates=kps.flatMap(([,v])=>(v.mistakes||[]).map(m=>m.date)).sort().reverse();
+  const lastDate=lastDates.length?new Date(lastDates[0]).toLocaleDateString('ja-JP',{month:'short',day:'numeric'}):'—';
+  document.getElementById('dp-stats').innerHTML=`
+    <div class="dp-stat"><div class="dp-stat-n" style="color:var(--math)">${totalMistakes}</div><div class="dp-stat-l">間違い合計</div></div>
+    <div class="dp-stat"><div class="dp-stat-n" style="color:var(--soc)">${totalReviews}</div><div class="dp-stat-l">復習回数</div></div>
+    <div class="dp-stat"><div class="dp-stat-n" style="font-size:13px;padding-top:3px">${lastDate}</div><div class="dp-stat-l">最終登録</div></div>`;
+
+  // Body
+  let bodyHtml='';
+
+  // AI pattern analysis (if has mistakes)
+  if(totalMistakes>0 && kps.length>0){
+    const topKP=kps.sort((a,b)=>(b[1].mistakes||[]).length-(a[1].mistakes||[]).length)[0];
+    const topCount=(topKP[1].mistakes||[]).length;
+    bodyHtml+=`<div class="ai-box"><div class="ai-icon">✨</div><div class="ai-text"><strong>AIが分析：</strong>「${topKP[0]}」で${topCount}回間違いが集中しています。${topKP[1].mistakes&&topKP[1].mistakes.length>1?'同じポイントを繰り返し間違えているパターンです。':''}${topKP[1].mistakes&&topKP[1].mistakes[0]?'次から：'+topKP[1].mistakes[topKP[1].mistakes.length-1].nextTime:''}</div></div>`;
+  }
+
+  // KP list
+  bodyHtml+=`<div class="kp-sec-label">知識ポイント別 内訳</div>`;
+  if(kps.length===0){
+    bodyHtml+=`<div style="text-align:center;padding:20px 0;color:var(--ink3);font-size:13px;font-family:'Noto Sans JP',sans-serif">まだ知識ポイントが登録されていません<br><span style="font-size:11px">写真をアップロードすると自動で追加されます</span></div>`;
+  } else {
+    const sorted=[...kps].sort((a,b)=>{const order={wrong:0,reviewing:1,mastered:2,untouched:3};return(order[a[1].status||'untouched']||0)-(order[b[1].status||'untouched']||0);});
+    sorted.forEach(([kpName,kpData])=>{
+      const cnt=(kpData.mistakes||[]).length;
+      const maxCnt=Math.max(...kps.map(([,v])=>(v.mistakes||[]).length),1);
+      const pct=Math.round(cnt/maxCnt*100);
+      const kst=kpData.status||'untouched';
+      let accentColor='var(--rule)';
+      if(kst==='wrong') accentColor='#E24B4A';
+      else if(kst==='reviewing') accentColor='#EF9F27';
+      else if(kst==='mastered') accentColor='#639922';
+      let barColor=accentColor;
+      let badgeHtml='';
+      if(kst==='wrong') badgeHtml=`<span class="kp-badge kb-wrong">❌ 要復習</span>`;
+      else if(kst==='reviewing') badgeHtml=`<span class="kp-badge kb-reviewing">↻ 復習中</span>`;
+      else if(kst==='mastered') badgeHtml=`<span class="kp-badge kb-mastered">✓ 習得</span>`;
+      else badgeHtml=`<span class="kp-badge kb-none">未登録</span>`;
+
+      const key=subj+'_'+no+'_'+kpName;
+      const isOpen=expandedKPs[key];
+
+      // Mistakes detail
+      let detailHtml='';
+      if(isOpen){
+        detailHtml='<div class="kp-detail">';
+        (kpData.mistakes||[]).forEach(m=>{
+          const d=new Date(m.date).toLocaleDateString('ja-JP',{year:'numeric',month:'short',day:'numeric'});
+          detailHtml+=`<div class="mistake-card">
+            <div class="mc-date">${d} 登録</div>
+            <div class="mc-wrong">❌ ${m.wrong||'記録なし'}</div>
+            <div class="mc-note">${m.explanation||''}</div>
+            ${m.nextTime?`<div class="mc-next">✓ 次から：${m.nextTime}</div>`:''}
+          </div>`;
+        });
+        // Timeline
+        const reviews=(state.reviews||[]).slice(-5);
+        if(cnt>0||reviews.length>0){
+          detailHtml+='<div class="tl-wrap"><div class="tl-label">REVIEW TIMELINE</div>';
+          (kpData.mistakes||[]).slice(0,2).forEach(m=>{
+            const d=new Date(m.date).toLocaleDateString('ja-JP',{month:'short',day:'numeric'});
+            detailHtml+=`<div class="tl-row"><div class="tl-dot" style="background:#E24B4A"></div><span class="tl-date">${d}</span><span class="tl-tag tt-wrong">間違い登録</span></div>`;
+          });
+          reviews.forEach(r=>{
+            const d=new Date(r.date).toLocaleDateString('ja-JP',{month:'short',day:'numeric'});
+            detailHtml+=`<div class="tl-row"><div class="tl-dot" style="background:${r.ok?'#639922':'#E24B4A'}"></div><span class="tl-date">${d}</span><span class="tl-tag ${r.ok?'tt-ok':'tt-ng'}">${r.ok?'✓ 理解した':'× もう一度'}</span></div>`;
+          });
+          if(isReviewDue(subj,no)){
+            detailHtml+=`<div class="tl-row"><div class="tl-dot" style="background:#EF9F27"></div><span class="tl-date">今日</span><span class="tl-tag tt-plan">📌 復習予定</span></div>`;
+          }
+          detailHtml+='</div>';
+        }
+        detailHtml+='</div>';
+      }
+
+      bodyHtml+=`<div class="kp-item kp-${kst}" id="kpitem-${key.replace(/[^a-zA-Z0-9]/g,'_')}">
+        <div class="kp-head-row" onclick="toggleKP('${key.replace(/'/g,"\\'")}')">
+          <div class="kp-accent" style="background:${accentColor}"></div>
+          <div class="kp-info">
+            <div class="kp-name">${kpName}</div>
+            <div class="kp-bar-row">
+              <div class="kp-bar-bg"><div class="kp-bar" style="width:${pct}%;background:${barColor}"></div></div>
+              <span class="kp-cnt" style="color:${kst==='untouched'?'var(--ink3)':accentColor}">${cnt>0?cnt+'回':'—'}</span>
+            </div>
+          </div>
+          ${badgeHtml}
+          <span class="kp-chevron">${isOpen?'▲':'▼'}</span>
+        </div>
+        ${detailHtml}
+      </div>`;
+    });
+  }
+
+  document.getElementById('dp-body').innerHTML=bodyHtml;
+
+  // Foot
+  let footHtml='';
+  if(kps.length>0){
+    footHtml=`<div class="df-btn df-ok" onclick="markReview(true)">✓ 理解した</div>
+    <div class="df-btn df-ng" onclick="markReview(false)">× もう一度</div>`;
+  }
+  footHtml+=`<div class="df-btn df-up" onclick="closeDetail();openUpload('${subj}','${no}')">📷 写真を追加</div>`;
+  document.getElementById('dp-foot').innerHTML=footHtml;
+
+  document.getElementById('detailOverlay').classList.add('open');
+  document.getElementById('detailPanel').classList.add('open');
+}
+
+function toggleKP(key){
+  expandedKPs[key]=!expandedKPs[key];
+  if(openUnit) openDetail(openUnit.subj,openUnit.no);
+}
+
+function closeDetail(){
+  document.getElementById('detailOverlay').classList.remove('open');
+  document.getElementById('detailPanel').classList.remove('open');
+  openUnit=null;
+}
+
+function closeDetailBg(e){
+  if(e.target.id==='detailOverlay') closeDetail();
+}
+
+function markReview(ok){
+  if(!openUnit) return;
+  const key=openUnit.subj+'_'+openUnit.no;
+  if(!db.units[key]) return;
+  if(!db.units[key].reviews) db.units[key].reviews=[];
+  db.units[key].reviews.push({date:new Date().toISOString(),ok});
+  const okCount=db.units[key].reviews.filter(r=>r.ok).length;
+  if(okCount>=3) db.units[key].status='mastered';
+  else if(!ok) db.units[key].status='wrong';
+  else db.units[key].status='reviewing';
+  // Update KP statuses too
+  Object.keys(db.units[key].kps||{}).forEach(kpName=>{
+    const kp=db.units[key].kps[kpName];
+    const kpOk=ok;
+    if(!kp.reviews) kp.reviews=[];
+    kp.reviews.push({date:new Date().toISOString(),ok:kpOk});
+    const kpOkCount=kp.reviews.filter(r=>r.ok).length;
+    if(kpOkCount>=3) kp.status='mastered';
+    else if(!kpOk) kp.status='wrong';
+    else kp.status='reviewing';
+  });
+  saveDB();
+  render();
+  openDetail(openUnit.subj,openUnit.no);
+  toast(ok?'✓ 理解済みとして記録':'↻ 復習スケジュールに追加');
+}
+
+// ═══════════════════════════════════════
+// RANKING VIEW
+// ═══════════════════════════════════════
+function showRanking(){
+  const container=document.getElementById('mapContainer');
+  document.getElementById('mapTitle').textContent='弱点ランキング — 全科目横断';
+
+  // Collect all KPs with mistake counts
+  const all=[];
+  ['math','sci','soc','jp'].forEach(s=>{
+    C[s].units.forEach(u=>{
+      const state=getUnit(s,u.no);
+      Object.entries(state.kps||{}).forEach(([kpName,kpData])=>{
+        const cnt=(kpData.mistakes||[]).length;
+        if(cnt>0) all.push({s,u,kpName,cnt,status:kpData.status||'untouched'});
+      });
+    });
+  });
+
+  if(!all.length){
+    container.innerHTML=`<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-txt">まだデータがありません</div><div class="empty-sub">写真をアップロードして間違いを登録しましょう</div></div>`;
+    return;
+  }
+
+  all.sort((a,b)=>b.cnt-a.cnt);
+  const max=all[0].cnt;
+
+  // Summary cards
+  const subjCounts={math:0,sci:0,soc:0,jp:0};
+  all.forEach(x=>subjCounts[x.s]+=x.cnt);
+  const weakestSubj=Object.entries(subjCounts).sort((a,b)=>b[1]-a[1])[0];
+
+  let html=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">`;
+  ['math','sci','soc','jp'].forEach(s=>{
+    const col=s==='math'?'var(--math)':s==='sci'?'var(--sci)':s==='soc'?'var(--soc)':'var(--jp)';
+    html+=`<div style="background:var(--white);border:1px solid var(--rule);border-radius:8px;padding:10px 12px;border-top:3px solid ${col}">
+      <div style="font-size:10px;color:var(--ink3);font-family:'Noto Sans JP',sans-serif;margin-bottom:3px">${C[s].name}</div>
+      <div style="font-size:20px;font-weight:700;color:${col};font-family:'DM Sans',sans-serif">${subjCounts[s]}</div>
+      <div style="font-size:9px;color:var(--ink3);font-family:'Noto Sans JP',sans-serif">間違い合計</div>
+    </div>`;
+  });
+  html+='</div>';
+
+  html+=`<div style="background:var(--white);border:1px solid var(--rule);border-radius:10px;padding:14px 16px">
+    <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px">知識ポイント 間違い回数 TOP${Math.min(all.length,20)}</div>`;
+
+  all.slice(0,20).forEach((x,i)=>{
+    const col=x.s==='math'?'var(--math)':x.s==='sci'?'var(--sci)':x.s==='soc'?'var(--soc)':'var(--jp)';
+    const pct=Math.round(x.cnt/max*100);
+    const isTop=i<3;
+    html+=`<div class="rank-item" onclick="openDetail('${x.s}','${x.u.no}')" style="cursor:pointer">
+      <div class="rank-n ${isTop?'top3':''}">${i+1}</div>
+      <div class="rank-body">
+        <div class="rank-name">${x.kpName}</div>
+        <div class="rank-unit">${C[x.s].name} · ${x.u.no} ${x.u.name}</div>
+        <div class="rank-bar-bg"><div class="rank-bar" style="width:${pct}%;background:${col}"></div></div>
+      </div>
+      <div class="rank-cnt" style="color:${col}">${x.cnt}回</div>
+    </div>`;
+  });
+  html+='</div>';
+  container.innerHTML=html;
+}
+
+// ═══════════════════════════════════════
+// UPLOAD
+// ═══════════════════════════════════════
+let uploadTargetSubj=null, uploadTargetNo=null;
+
+function openUpload(subj,no){
+  uploadTargetSubj=subj||null;
+  uploadTargetNo=no||null;
+  resetUpload();
+  document.getElementById('uploadBg').classList.add('open');
+}
+function closeUpload(){document.getElementById('uploadBg').classList.remove('open');resetUpload();}
+function closeUploadBg(e){if(e.target.id==='uploadBg') closeUpload();}
+function resetUpload(){
+  currentPhoto=null;currentResult=null;
+  document.getElementById('uploadForm').style.display='block';
+  document.getElementById('spinBox').style.display='none';
+  document.getElementById('resultBox').style.display='none';
+  document.getElementById('mainBtn').textContent='AIで解析する →';
+  document.getElementById('mainBtn').onclick=analyzePhoto;
+  document.getElementById('fileInput').value='';
+  document.getElementById('dropZone').querySelector('.dz-text').textContent='写真・問題用紙をドロップ';
+}
+
+function handleFile(e){
+  const f=e.target.files[0];
+  if(!f) return;
+  currentPhoto=f;
+  document.getElementById('dropZone').querySelector('.dz-text').textContent='📎 '+f.name;
+}
+
+async function analyzePhoto(){
+  if(!currentPhoto){toast('写真を選択してください','err');return;}
+  if(!apiKey){toast('APIキーを設定してください','err');openKeyModal();return;}
+  document.getElementById('uploadForm').style.display='none';
+  document.getElementById('spinBox').style.display='block';
+  document.getElementById('modalFoot').style.display='none';
+
+  const b64=await toBase64(currentPhoto);
+  const hint=uploadTargetSubj?`（科目は${C[uploadTargetSubj].name}、単元は${C[uploadTargetSubj].units.find(u=>u.no===uploadTargetNo)?.name||''}です）`:'';
+
+  const prompt=`あなたはSAPIX小学部6年生の学習サポートAIです。この問題・解答用紙の画像を分析して、以下をJSONのみで返してください（マークダウン不要、バッククォート不要）:
+{
+  "subject": "math または sci または soc または jp",
+  "unitNo": "最も近いテキストNo（例:61-05）",
+  "unitName": "単元名",
+  "knowledgePoint": "この問題で問われている具体的な知識ポイント名（例：速さ・時間・距離の関係、リトマス紙の色変化、武家政権の役職名）",
+  "wrong": "何を間違えたか・どこで躓いたかを1〜2文で具体的に",
+  "explanation": "なぜ間違えたか、正しい考え方を2〜3文で",
+  "nextTime": "次回この問題タイプを解くときの具体的な注意点を1文で",
+  "keyPoints": ["重要ポイント1","重要ポイント2","重要ポイント3"]
+}${hint}`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:[
+        {type:'image',source:{type:'base64',media_type:currentPhoto.type,data:b64}},
+        {type:'text',text:prompt}
+      ]}]})
+    });
+    const data=await res.json();
+    const text=data.content?.map(c=>c.text||'').join('');
+    currentResult=JSON.parse(text.replace(/```json|```/g,'').trim());
+
+    document.getElementById('spinBox').style.display='none';
+    document.getElementById('resultBox').style.display='block';
+    document.getElementById('modalFoot').style.display='flex';
+    document.getElementById('rb-unit').textContent=(currentResult.unitNo||'')+' '+( currentResult.unitName||'')+' › '+( currentResult.knowledgePoint||'');
+    document.getElementById('rb-wrong').textContent='❌ '+(currentResult.wrong||'');
+    document.getElementById('rb-note').textContent=currentResult.explanation||'';
+    document.getElementById('rb-next').textContent='✓ 次から：'+(currentResult.nextTime||'');
+    document.getElementById('mainBtn').textContent='保存する →';
+    document.getElementById('mainBtn').onclick=saveResult;
+  }catch(err){
+    document.getElementById('spinBox').style.display='none';
+    document.getElementById('uploadForm').style.display='block';
+    document.getElementById('modalFoot').style.display='flex';
+    toast('解析に失敗しました。APIキーを確認してください','err');
+    console.error(err);
+  }
+}
+
+function saveResult(){
+  if(!currentResult) return;
+  const subj=uploadTargetSubj||currentResult.subject||'math';
+  let no=uploadTargetNo||currentResult.unitNo||'';
+
+  // Match unit
+  const units=C[subj]?.units||[];
+  if(!units.find(u=>u.no===no)){
+    const found=units.find(u=>u.no.replace(/[^0-9]/g,'').slice(-2)===no.replace(/[^0-9]/g,'').slice(-2));
+    no=found?found.no:(units[0]?.no||'');
+  }
+
+  const key=subj+'_'+no;
+  if(!db.units[key]) db.units[key]={status:'untouched',kps:{},reviews:[]};
+  if(!db.units[key].kps) db.units[key].kps={};
+
+  const kpName=currentResult.knowledgePoint||'その他';
+  if(!db.units[key].kps[kpName]) db.units[key].kps[kpName]={status:'wrong',mistakes:[],reviews:[]};
+
+  const entry={date:new Date().toISOString(),wrong:currentResult.wrong,explanation:currentResult.explanation,nextTime:currentResult.nextTime,keyPoints:currentResult.keyPoints};
+  db.units[key].kps[kpName].mistakes.push(entry);
+  db.units[key].kps[kpName].status='wrong';
+  db.units[key].status='wrong';
+
+  if(!db.mistakes) db.mistakes=[];
+  db.mistakes.push({...entry,subj,no,kpName});
+
+  saveDB();
+  closeUpload();
+  render();
+  toast('✓ 保存しました！復習スケジュールに追加されました');
+
+  // Re-open detail if was open
+  if(uploadTargetSubj&&uploadTargetNo) setTimeout(()=>openDetail(uploadTargetSubj,uploadTargetNo),100);
+}
+
+// ═══════════════════════════════════════
+// API KEY
+// ═══════════════════════════════════════
+function openKeyModal(){document.getElementById('keyBg').classList.add('open');document.getElementById('keyInput').value=apiKey;}
+function closeKeyBg(e){if(e.target.id==='keyBg') document.getElementById('keyBg').classList.remove('open');}
+function saveKey(){
+  apiKey=document.getElementById('keyInput').value.trim();
+  localStorage.setItem('cmap2_key',apiKey);
+  document.getElementById('apiBtn').classList.toggle('set',!!apiKey);
+  document.getElementById('keyBg').classList.remove('open');
+  toast(apiKey?'✓ APIキーを保存しました':'APIキーを削除しました');
+}
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+function toBase64(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});}
+function saveDB(){localStorage.setItem('cmap2_db',JSON.stringify(db));}
+function toast(msg,type=''){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='toast'+(type?' '+type:'')+' show';
+  setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+// INIT
+render();
+</script>
+</body>
+</html>
